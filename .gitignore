@@ -93,3 +93,16 @@ logs/
 
 # Audio artifacts
 *.mp3
+*.flac
+*.m4a
+*.wav
+
+# Misc
+*.xml
+*.sqlite
+*.sqlite3
+*.txt
+*.png
+*.jpg
+*.jpeg
+*.bmp
