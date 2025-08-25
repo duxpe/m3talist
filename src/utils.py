@@ -1,9 +1,8 @@
+import re
 import string
 
 def normalize_string(input) -> str:
-    base_string = input.strip()\
-        .lstrip(string.digits).lstrip(' - -- | \\ / ')\
-            .lstrip(string.digits).lstrip(' - -- | \\ / ')
+    base_string = input.strip().lstrip('- / | \\ . ').replace(" ", '-')
 
     replacements = str.maketrans({
         ' ': '-',
@@ -16,6 +15,7 @@ def normalize_string(input) -> str:
         '.': ''
     })
     clean_string = base_string.translate(replacements)
+    clean_string = re.sub(r'-+', '-', clean_string)
     clean_string = str(clean_string.encode('ascii', 'ignore').decode('ascii'))
     clean_string = clean_string.replace('--','-')
 
