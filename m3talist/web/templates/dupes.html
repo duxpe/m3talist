@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <span class="title">DUPLICATE RECORDINGS</span>
+  {% if groups %}
+    <p class="note">Grouped by decoded audio, so tags and filenames are ignored.</p>
+    {% for kind, group in groups %}
+      <p class="warn" style="margin-bottom:.2rem">
+        {{ group | length }} copies <span class="frame">{{ kind }}</span>
+      </p>
+      <table>
+        <tbody>
+          {% for track in group %}
+          <tr>
+            <td>{{ track.title or track.source_path.stem }}</td>
+            <td class="note">{{ track.source_path }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endfor %}
+    {% if not fpcalc %}
+      <p class="note">fpcalc absent — only byte-identical audio is matched.
+      Install it to also catch the same recording at a different bitrate.</p>
+    {% endif %}
+  {% elif not fpcalc %}
+    <p class="warn">fpcalc not found. Acoustic dedupe is off — everything else keeps working.</p>
+    <table>
+      <thead><tr><th>PLATFORM</th><th>INSTALL</th></tr></thead>
+      <tbody>
+        <tr><td>any</td><td><b>make deps</b></td></tr>
+        <tr><td>Fedora</td><td>sudo dnf install chromaprint-tools</td></tr>
+        <tr><td>Debian · Ubuntu · Mint</td><td>sudo apt install libchromaprint-tools</td></tr>
+        <tr><td>Arch</td><td>sudo pacman -S chromaprint</td></tr>
+        <tr><td>macOS</td><td>brew install chromaprint</td></tr>
+        <tr><td>Windows</td><td><a href="https://acoustid.org/chromaprint">download fpcalc</a>, add to PATH</td></tr>
+      </tbody>
+    </table>
+  {% else %}
+    <p class="note">No duplicates found. Run FINGERPRINT on the build screen first.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

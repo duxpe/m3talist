@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <pre class="masthead">▖  ▖▄▖▄▖▄▖▖ ▄▖▄▖▄▖
+▛▖▞▌▄▌▐ ▌▌▌ ▐ ▚ ▐
+▌▝ ▌▄▌▐ ▛▌▙▖▟▖▄▌▐</pre>
+  <p class="tagline">flat collection builder for players that cannot browse folders</p>
+</section>
+
+<section class="panel">
+  <span class="title">CATALOG</span>
+  <div class="row" style="margin-bottom:.75rem">
+    <form method="post" action="/scan"><button class="action" type="submit">SCAN INPUT</button></form>
+    <a class="action" href="/build">BUILD →</a>
+    <input type="text" id="filter" placeholder="/ filter" aria-label="filter releases">
+  </div>
+
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>ARTIST <span class="frame">TPE2</span></th>
+        <th>ALBUM <span class="frame">TALB</span></th>
+        <th class="num">YEAR <span class="frame">TYER</span></th>
+        <th class="num">TRACKS <span class="frame">TRCK</span></th>
+        <th>STATE</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for release, tracks in rows %}
+      <tr data-href="/release/{{ release.id }}" class="{% if release.needs_review %}review{% endif %}">
+        <td>{{ release.artist }}</td>
+        <td>{{ release.title }}</td>
+        <td class="num">{{ release.year or '—' }}</td>
+        <td class="num">{{ tracks | length }}</td>
+        <td>{% if release.needs_review %}⚠ ORDER{% else %}<span class="note">ready</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="note">Catalog empty. Drop one album per subfolder into <b>input/</b>, then SCAN INPUT.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

@@ -57,7 +57,7 @@ finds duplicate rips of the same recording; genre and era grouping is SQL.
 | Cover resize | `Pillow` | forces baseline JPEG |
 | Catalog + cache | `sqlite3` (stdlib) | |
 | HTTP | `httpx` | MusicBrainz 1 req/s, mandatory User-Agent |
-| Web UI | FastAPI + HTMX + SSE | no build step, no npm |
+| Web UI | FastAPI + Jinja2 + SSE | no build step, no npm, no runtime asset fetched |
 | Fingerprint | `fpcalc` (Chromaprint) | optional binary; absent means dedupe is skipped |
 
 No task queue: a background thread over `multiprocessing.Pool` streaming progress
@@ -71,8 +71,7 @@ measured value, `cover_max_px`, lives in a config file next to the input path.
 SQLite holds what is actually per-item:
 
 ```
-release(id PK, artist, title, year, mbid, cover_path,
-        keep_order, needs_review)
+release(id PK, artist, title, year, mbid, cover_path, needs_review)
 
 track(id PK, release_id FK -> release.id,
       source_path UNIQUE, output_name,
@@ -85,8 +84,8 @@ mb_cache(query_hash PK, response, fetched_at)
 
 `sort_index` is the global write position — single source of truth for order,
 computed once per run, reused by both the filename prefix and the move step.
-`status`: `pending | copied | transcoded | failed`. `keep_order` marks a release
-that must stay contiguous. `mb_cache` makes a re-run fully offline.
+`status`: `pending | copied | transcoded | failed`. `mb_cache` makes a re-run
+fully offline.
 
 ## Happy path
 
@@ -95,7 +94,7 @@ that must stay contiguous. `mb_cache` makes a re-run fully offline.
    and ten `track` rows. Track numbers come from `TRCK`, else the filename prefix.
 3. Enrichment matches the release on MusicBrainz, fills year and genre, pulls the
    cover from Cover Art Archive. Everything lands in `mb_cache`.
-4. Review screen shows the album in order. User confirms; `keep_order` stays set.
+4. Review screen shows the album in order. Nothing to correct, so the user moves on.
 5. Build assigns `sort_index` library-wide. Source is FLAC, so `ffmpeg` transcodes
    into a temp dir; tags written in the fixed device-safe format.
 6. Files move into `output/` **sequentially by `sort_index`**, `sync` after each,

@@ -67,7 +67,7 @@ m3talist/
   cli.py          argparse subcommands
   web/
     app.py        FastAPI routes, SSE
-    templates/    Jinja2 partials for HTMX
+    templates/    Jinja2 templates
     static/       one CSS file, no JS build
 ```
 

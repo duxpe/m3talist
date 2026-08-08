@@ -1,0 +1,34 @@
+[project]
+name = "m3talist"
+version = "2.0.0"
+description = "Normalize a music library into a flat, device-safe collection for cheap MP3 players"
+requires-python = ">=3.11"
+dependencies = [
+    "mutagen>=1.47",
+    "rich>=14.0",
+    "httpx>=0.28",
+    "Pillow>=11.0",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.20",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+m3talist = "m3talist.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["m3talist*"]
+
+[tool.setuptools.package-data]
+"m3talist.web" = ["templates/*.html", "static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
