@@ -10,10 +10,8 @@ The `yp3_` firmware prefix identifies the chip family: Smartlink **SL6801 /
 SL6806**, labelled "Jointbees MP3", per
 [smartlink_flash](https://github.com/ilyakurdyukov/smartlink_flash). `YP3` is 云P3
 (*yún P3*) — unrelated to Samsung's `YP-` line. Not Actions, JieLi, Anyka or
-Rockchip, which is where most community knowledge about cheap players lives.
-
-VID `301a` is absent from the official `usb.ids`, so `lsusb` prints the raw ID with
-no vendor name.
+Rockchip, which is where most community knowledge about cheap players lives — so
+that knowledge transfers by analogy at best.
 
 | | SL6801 | SL6806 |
 |---|---|---|
@@ -21,15 +19,36 @@ no vendor name.
 | Bootloader | `301a:2800` | `301a:2800` |
 | `iSerial` | `20201111000001` | `20220320000001` |
 
-`iSerial` is the reliable discriminator — `smtlink_dump.c` compares those exact
-strings to pick the chip. `iProduct` reads `SMTLINK CARDREADER 1.00`,
-`SMTLINK DEVICE 2.00` or `SSTLINK DDVICE 2.02` (the typos are in the firmware).
+`iSerial` is the discriminator — `smtlink_dump.c` compares those exact strings to
+pick the chip.
+
+**Confirmed on the reference unit**, not inferred:
+
+```
+idVendor         0x301a SmartlinkTechnology
+idProduct        0x2801 USB2.0 Device
+bcdDevice        1.00
+iSerial          20201111000001        -> SL6801
+bInterfaceClass  8 Mass Storage
+```
+
+`lsusb` does resolve a vendor name here, but it comes from the device's own
+`iManufacturer` descriptor rather than `usb.ids`. Note the strings differ from the
+`SMTLINK CARDREADER 1.00` form seen elsewhere in the family.
 
 ```bash
-lsusb                          # find the VID:PID
-lsusb -v -d 301a:2800          # iSerial, iProduct, bcdDevice
-blkid /dev/sdX1                # FAT label and volume serial
+lsusb                                   # find the VID:PID
+lsusb -v -d 301a:2801 | grep -iE 'iSerial|iProduct|bcdDevice'
+blkid /dev/sdX1                         # FAT label and volume serial
 ```
+
+### Storage does not always enumerate
+
+The unit re-enumerates in a loop — its USB device number climbed across three
+consecutive probes, with a multi-second absence between them. `usb-storage` binds,
+but no block device appears. Selecting USB/disk mode on the player itself, or
+swapping a charge-only cable, is the first thing to rule out. Until a block device
+exists, the FAT boot sector cannot be read.
 
 ## What is not knowable from documentation
 
