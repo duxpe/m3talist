@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <span class="title">COVER CALIBRATION</span>
+  <p>Nobody has documented what cover art the SL6801 tolerates — there is no public
+  SDK. So measure it instead of guessing.</p>
+  <p class="note">Each file below holds the same eight-second tone. Only the artwork
+  changes, one variable at a time. The last one is the control: same image as
+  04, saved as progressive JPEG instead of baseline.</p>
+  <form method="post" action="/calibrate">
+    <button class="action" type="submit">GENERATE LADDER</button>
+  </form>
+</section>
+
+{% if written %}
+<section class="panel">
+  <span class="title">LADDER</span>
+  <table>
+    <thead><tr><th>FILE</th><th class="num">BYTES</th></tr></thead>
+    <tbody>
+      {% for path in written %}
+      <tr>
+        <td>{{ path.name }}</td>
+        <td class="num">{{ '{:,}'.format(path.stat().st_size) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <ol class="note">
+    <li>Copy <b>output/_calibrate/</b> to the device.</li>
+    <li>Play every file in order.</li>
+    <li>Note the last one that plays cleanly and shows its art.</li>
+    <li>Record it in CONFIG. If even 100px misbehaves, leave covers off.</li>
+  </ol>
+</section>
+{% endif %}
+
+{% endblock %}

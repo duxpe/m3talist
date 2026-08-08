@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>m3talist // {{ screen }}</title>
+  <link rel="stylesheet" href="/static/m3talist.css">
+</head>
+<body>
+
+<header class="topbar">
+  <span>M3TALIST // {{ screen }}</span>
+  <span class="meta">
+    <span>{{ track_total }} TRK</span>
+    <span>{% if settings.offline %}OFFLINE{% else %}ONLINE{% endif %}</span>
+    <span>COVER: {% if settings.cover_enabled %}{{ settings.cover_max_px }}PX{% else %}OFF{% endif %}</span>
+    <button id="crt" type="button">CRT: ON</button>
+  </span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <a href="/" class="{% if screen in ('LIBRARY', 'RELEASE') %}active{% endif %}">LIBRARY</a>
+    <a href="/build" class="{% if screen == 'BUILD' %}active{% endif %}">BUILD</a>
+    <a href="/dupes" class="{% if screen == 'DUPES' %}active{% endif %}">DUPES</a>
+    <a href="/calibrate" class="{% if screen == 'CALIBRATE' %}active{% endif %}">CALIBRATE</a>
+    <a href="/config" class="{% if screen == 'CONFIG' %}active{% endif %}">CONFIG</a>
+    {% if review_total %}
+      <p class="warn">⚠ {{ review_total }} release{{ 's need' if review_total != 1 else ' needs' }} order</p>
+    {% endif %}
+  </nav>
+
+  <main>
+    {% if input_stale %}
+    <section class="panel stale">
+      <span class="title">INPUT CHANGED</span>
+      <div class="row">
+        <span class="warn">⚠ Files in input/ differ from the last scan. The catalog is out of date.</span>
+        <form method="post" action="/scan"><button class="action" type="submit">RELOAD</button></form>
+      </div>
+    </section>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <p class="prompt cursor">m3talist:{{ screen | lower }}$ </p>
+  </main>
+</div>
+
+<footer class="statusbar">
+  {% block keys %}
+    <span><kbd>↑↓</kbd> select</span>
+    <span><kbd>enter</kbd> open</span>
+    <span><kbd>/</kbd> filter</span>
+  {% endblock %}
+  <span><kbd>l</kbd> library</span>
+  <span><kbd>b</kbd> build</span>
+  <span><kbd>?</kbd> help</span>
+</footer>
+
+<dialog id="help">
+  <p>M3TALIST KEYS</p>
+  <dl>
+    <dt>↑ ↓ / j k</dt><dd>move selection</dd>
+    <dt>enter</dt><dd>open selected</dd>
+    <dt>g / G</dt><dd>first / last</dd>
+    <dt>/</dt><dd>filter rows</dd>
+    <dt>l b d c</dt><dd>library · build · dupes · calibrate</dd>
+    <dt>esc</dt><dd>close</dd>
+  </dl>
+  <p class="note">click anywhere to dismiss</p>
+</dialog>
+
+<script src="/static/m3talist.js" defer></script>
+</body>
+</html>

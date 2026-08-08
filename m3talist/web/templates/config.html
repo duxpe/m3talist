@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <span class="title">OUTPUT FORMAT</span>
+  <p class="note">Fixed, not configurable. Where the conservative option costs
+  nothing, it wins without an experiment.</p>
+  <table>
+    <tbody>
+      <tr><td>TAG</td><td>ID3v2.3 + ID3v1 tail</td></tr>
+      <tr><td>TEXT</td><td>UTF-16 with BOM</td></tr>
+      <tr><td>YEAR</td><td><span class="frame">TYER</span> not <span class="frame">TDRC</span></td></tr>
+      <tr><td>AUDIO</td><td>MP3 CBR 128 kbps · 44.1 kHz · stereo</td></tr>
+      <tr><td>NAMES</td><td>ASCII, numeric prefix</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <span class="title">MEASURED</span>
+  <form method="post" action="/config" class="row">
+    <label>cover_max_px
+      <input type="number" name="cover_max_px" min="0" max="1000" step="10"
+             value="{{ settings.cover_max_px or '' }}" placeholder="off">
+    </label>
+    <label><input type="checkbox" name="offline" {% if settings.offline %}checked{% endif %}> offline</label>
+    <button class="action" type="submit">SAVE</button>
+  </form>
+  <p class="note">Leave cover_max_px empty to keep artwork off. Get the number from
+  <a href="/calibrate">CALIBRATE</a>.</p>
+</section>
+
+<section class="panel">
+  <span class="title">GENRE <span class="frame">TCON</span></span>
+  <table>
+    <tbody>
+      {% for label, total in genres[:12] %}
+      <tr><td>{{ label }}</td><td class="num">{{ total }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <span class="title">ERA <span class="frame">TYER</span></span>
+  <table>
+    <tbody>
+      {% for label, total in years[:12] %}
+      <tr><td>{{ label }}</td><td class="num">{{ total }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

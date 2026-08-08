@@ -106,3 +106,8 @@ logs/
 *.jpg
 *.jpeg
 *.bmp
+# m3talist runtime
+.m3talist/
+config.toml
+input/
+output/

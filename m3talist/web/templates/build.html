@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <span class="title">RUN</span>
+  <div class="row">
+    <form method="post" action="/scan"><button class="action" type="submit">SCAN</button></form>
+    <form method="post" action="/scan">
+      <input type="hidden" name="fresh" value="on">
+      <button class="action danger" type="submit"
+              title="Discard the catalog and read input/ from scratch. Manual track orders are lost.">RESET</button>
+    </form>
+    <form method="post" action="/enrich"><button class="action" type="submit">ENRICH</button></form>
+    <form method="post" action="/build"><button class="action" type="submit">BUILD</button></form>
+    <form method="post" action="/dupes"><button class="action" type="submit">FINGERPRINT</button></form>
+    <span class="note">{{ output_count }} file{{ 's' if output_count != 1 }} currently in output/</span>
+  </div>
+  {% if review_total %}
+    <p class="warn">⚠ {{ review_total }} release{{ 's' if review_total != 1 }} excluded — order unknown.</p>
+  {% endif %}
+</section>
+
+<div class="build-grid">
+  <section class="panel">
+    <span class="title">TRACE</span>
+    <div class="log" id="log"><div class="note placeholder">idle — start a run above</div></div>
+  </section>
+
+  <section class="panel">
+    <span class="title">STATUS</span>
+    <p class="bar" id="bar">[░░░░░░░░░░░░░░░░░░░░]   0%</p>
+    <div class="counters">
+      <span class="k">STATE</span><span class="v note" id="c-state">IDLE</span>
+      <span class="k">DONE</span><span class="v" id="c-done">0</span>
+      <span class="k">QUEUED</span><span class="v" id="c-total">0</span>
+      <span class="k">FAILED</span><span class="v" id="c-failed">0</span>
+    </div>
+    <p class="note" id="c-summary"></p>
+    <p class="note" style="margin-top:1rem">
+      Files are transcoded in parallel, then written one at a time in play order.
+      That write order is what the player reads.
+    </p>
+  </section>
+</div>
+
+{% endblock %}
+{% block keys %}
+  <span>output → copy to the card sequentially</span>
+  <span><kbd>m3talist copy /run/media/…</kbd></span>
+{% endblock %}

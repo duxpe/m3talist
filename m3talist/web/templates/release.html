@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <span class="title">{{ release.artist }} — {{ release.title }}</span>
+  <div class="row">
+    <span class="frame">TPE2</span> {{ release.artist }}
+    <span class="frame">TALB</span> {{ release.title }}
+    <span class="frame">TYER</span> {{ release.year or '—' }}
+  </div>
+  {% if release.needs_review %}
+    <p class="warn">⚠ No track numbers found. Nothing is written for this release until
+    you set the order below. Filename order is the current guess.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <span class="title">TRACKS</span>
+  <form method="post" action="/release/{{ release.id }}/order">
+    <input type="hidden" name="track_ids" id="track_ids">
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>TITLE <span class="frame">TIT2</span></th>
+          <th>ARTIST <span class="frame">TPE1</span></th>
+          <th class="num">TRCK</th>
+          <th>OUTPUT</th>
+          <th>MOVE</th>
+        </tr>
+      </thead>
+      <tbody id="tracklist">
+        {% for track in tracks %}
+        <tr data-id="{{ track.id }}">
+          <td class="num position">{{ '%02d' % loop.index }}</td>
+          <td>{{ track.title or track.source_path.stem }}</td>
+          <td>{{ track.artist or '—' }}</td>
+          <td class="num">{{ track.track_no if track.track_no is not none else '—' }}</td>
+          <td class="note">{{ track.output_name or 'unassigned' }}</td>
+          <td>
+            <button class="action" type="button" data-move="up" aria-label="move up">▲</button>
+            <button class="action" type="button" data-move="down" aria-label="move down">▼</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="row" style="margin-top:.75rem">
+      <button class="action" type="submit">SAVE ORDER</button>
+      <a class="action" href="/">← LIBRARY</a>
+    </p>
+  </form>
+</section>
+
+{% endblock %}
+{% block keys %}
+  <span><kbd>▲▼</kbd> reorder</span>
+  <span>save writes <kbd>TRCK</kbd> and reassigns every prefix</span>
+{% endblock %}
