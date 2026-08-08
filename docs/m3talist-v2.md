@@ -2,15 +2,19 @@
 
 ## Problem
 
-Cheap generic MP3/MP4 players (reference device: GENAI `yp3_2.0.43`) cannot browse
-folders, so the library must be flattened into one directory. Flattening destroys
-album order: these players read tracks in **FAT directory-entry order**, not
-alphabetically and not by tag. The current script makes it worse — it wipes every
-tag including `TRCK`, strips the leading track number from filenames, and writes
-files from an unordered process pool.
+Cheap generic MP3/MP4 players cannot browse folders, so the library must be
+flattened into one directory. Flattening destroys album order: these players read
+tracks in **FAT directory-entry order**, not alphabetically and not by tag. The
+current script makes it worse — it wipes every tag including `TRCK`, strips the
+leading track number from filenames, and writes files from an unordered process
+pool.
 
 The library is also opaque: no way to find duplicate rips, group by genre or era,
 or see cover art, because tags are reduced to artist and album.
+
+Reference hardware is a Smartlink SL680x reporting firmware `yp3_2.0.43`, ~523
+tracks. Its ID3 behaviour is undocumented — no public SDK exists. See
+[device-sl680x](./device-sl680x.md) for identification and what that rules out.
 
 ## Goal / Solution
 
@@ -21,24 +25,28 @@ order and metadata is rich enough to browse.
 
 1. Global numeric filename prefix (`0042-time.mp3`) — aligns alphabetical order
    with write order.
-2. Serialized final write, ordered by artist → album → disc → track. Transcoding
-   stays parallel into a temp dir; only the move is sequential.
+2. Serialized final write by artist → album → disc → track, `sync` after each file
+   so writeback cannot reorder directory entries. Transcoding stays parallel into
+   a temp dir; only the move is sequential.
 3. `TRCK` / `TPOS` preserved, for firmware that does read tags.
 4. `fatsort -n` on the card, documented as an optional extra step.
 
-**Device safety** is a stored profile, not a hardcoded assumption. Defaults follow
-the compatibility consensus: ID3v2.3 + ID3v1 tail, UTF-16 text with BOM, `TYER`
-instead of `TDRC`, ASCII-only filenames, CBR 128 kbps / 44.1 kHz / stereo. Cover
-art ships **disabled**; a `calibrate` command writes a ladder of identical MP3s
-with escalating cover sizes so the user finds their device's real limit once.
+**Device safety** is one fixed conservative output format: ID3v2.3 + ID3v1 tail,
+UTF-16 with BOM, `TYER` over `TDRC`, ASCII filenames, CBR 128 kbps / 44.1 kHz /
+stereo. None of it is verified for this chip, and none of it needs to be — where
+the safe option costs nothing, it wins without an experiment.
 
-**Enrichment** is offline-first. The local SQLite catalog is the source of truth;
-MusicBrainz and Cover Art Archive only fill gaps, and every response is cached.
-No network means no enrichment — never a failure.
+Cover art is the exception: unknown limit, and "off" is a loss rather than a cost.
+`calibrate` writes a ladder of identical MP3s with escalating cover sizes; the
+user plays them and the last size that worked becomes `cover_max_px`. One run,
+one config line, permanent. It is the only thing the tool measures.
+
+**Enrichment** is offline-first. The SQLite catalog is the source of truth;
+MusicBrainz and Cover Art Archive only fill gaps, every response cached. No
+network means no enrichment — never a failure.
 
 **Similarity** is metadata plus fingerprints, no signal analysis: Chromaprint
-identifies duplicate rips of the same recording; genre and era grouping is SQL
-over the catalog.
+finds duplicate rips of the same recording; genre and era grouping is SQL.
 
 ## Tech stack
 
@@ -58,11 +66,11 @@ core; the core knows neither.
 
 ## Data model
 
-```
-device_profile(name PK, id3_version, text_encoding, write_id3v1,
-               cover_enabled, cover_max_px, bitrate, sample_rate,
-               channels, max_files)
+Output format is a constant in code, not data — there is one device. The only
+measured value, `cover_max_px`, lives in a config file next to the input path.
+SQLite holds what is actually per-item:
 
+```
 release(id PK, artist, title, year, mbid, cover_path,
         keep_order, needs_review)
 
@@ -78,25 +86,22 @@ mb_cache(query_hash PK, response, fetched_at)
 `sort_index` is the global write position — single source of truth for order,
 computed once per run, reused by both the filename prefix and the move step.
 `status`: `pending | copied | transcoded | failed`. `keep_order` marks a release
-that must stay contiguous and in track order. `mb_cache` holds raw API responses
-so a re-run is fully offline.
+that must stay contiguous. `mb_cache` makes a re-run fully offline.
 
 ## Happy path
 
 1. User drops `Pink Floyd - The Dark Side of the Moon/` into `input/`, opens the UI.
-2. Scan reads tags via `mutagen` and stream info via `ffprobe`, creating one
-   `release` and ten `track` rows. Track numbers come from `TRCK`, falling back to
-   the filename prefix.
+2. Scan reads tags via `mutagen` and stream info via `ffprobe` into one `release`
+   and ten `track` rows. Track numbers come from `TRCK`, else the filename prefix.
 3. Enrichment matches the release on MusicBrainz, fills year and genre, pulls the
-   front cover from Cover Art Archive. Everything lands in `mb_cache`.
+   cover from Cover Art Archive. Everything lands in `mb_cache`.
 4. Review screen shows the album in order. User confirms; `keep_order` stays set.
 5. Build assigns `sort_index` library-wide. Source is FLAC, so `ffmpeg` transcodes
-   to CBR 128 kbps / 44.1 kHz / stereo into a temp dir; tags are written as
-   ID3v2.3 + ID3v1; cover is skipped unless calibration enabled it.
-6. Files move into `output/` **sequentially by `sort_index`**, named
-   `0042-speak-to-me.mp3` … `0051-eclipse.mp3`. SSE streams progress.
-7. User copies `output/` to the card. Tracks play in order because filename order,
-   tag order and FAT write order all agree.
+   into a temp dir; tags written in the fixed device-safe format.
+6. Files move into `output/` **sequentially by `sort_index`**, `sync` after each,
+   named `0042-speak-to-me.mp3` … `0051-eclipse.mp3`. SSE streams progress.
+7. User copies `output/` to the card sequentially. Tracks play in order because
+   filename order, tag order and FAT write order all agree.
 
 ## Edge case
 
@@ -112,6 +117,5 @@ decision. `--force-alpha` accepts the guess unattended, for scripting.
 ## Out of scope
 
 Signal analysis (BPM, key, mood) — slow, and the community is still split on
-whether it beats metadata for personal collections. The hook stays open:
-`bliss-rs` or the frozen CC0 AcousticBrainz dump can fill `track` columns later
-without touching the pipeline.
+whether it beats metadata for personal collections. `bliss-rs` or the frozen CC0
+AcousticBrainz dump can fill `track` columns later without touching the pipeline.
